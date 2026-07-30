@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "chromadb",
+    "requests",
     "langwatch",
     "llama-index",
     "llama-index-embeddings-huggingface",

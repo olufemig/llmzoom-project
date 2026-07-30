@@ -2,7 +2,10 @@ import streamlit as st
 from pathlib import Path
 
 from app.config import DATA_DIR
-from app.ingest import ensure_data_dir, ingest_pdf, list_pdfs
+from app.ingest import ensure_data_dir, list_pdfs
+from app.inngest import trigger_ingest_event
+from app.job_state import IngestJobState, load_state, save_state
+from app.observability import setup_observability
 from app.rag import answer_question
 
 
@@ -20,6 +23,7 @@ def _render_sources(sources) -> None:
 
 
 def run_app() -> None:
+    setup_observability()
     st.set_page_config(page_title="RAG Manuals", layout="wide")
     st.title("Product Manual RAG")
     st.caption(f"Watching PDFs in {DATA_DIR}")
@@ -29,12 +33,32 @@ def run_app() -> None:
     uploaded_file = st.file_uploader("Upload PDF manual", type=["pdf"])
     if uploaded_file and st.button("Ingest"):
         pdf_path = _save_upload(uploaded_file, DATA_DIR)
-        with st.spinner("Indexing manual..."):
-            chunks = ingest_pdf(pdf_path)
-        st.success(f"Indexed {uploaded_file.name} with {chunks} chunks.")
+        save_state(IngestJobState(status="queued", filename=uploaded_file.name))
+        st.info("Ingest kicked off.")
+        try:
+            save_state(IngestJobState(status="running", filename=uploaded_file.name))
+            result = trigger_ingest_event(
+                {"name": "app/pdf.uploaded", "data": {"filename": uploaded_file.name, "path": str(pdf_path)}}
+            )
+            save_state(IngestJobState(status="running", filename=uploaded_file.name, run_id=result.run_id))
+            st.info("Ingest running.")
+        except Exception as exc:
+            save_state(IngestJobState(status="failed", filename=uploaded_file.name, message=str(exc)))
+            st.error(f"Ingest failed to start: {exc}")
 
     indexed = list_pdfs(DATA_DIR)
     st.metric("Indexed PDFs", len(indexed))
+
+    state = load_state()
+    if state:
+        if state.status == "queued":
+            st.warning(f"{state.filename} queued")
+        elif state.status == "running":
+            st.info(f"{state.filename} running")
+        elif state.status == "succeeded":
+            st.success(f"{state.filename} complete ({state.chunks} chunks)")
+        elif state.status == "failed":
+            st.error(f"{state.filename} failed: {state.message}")
 
     question = st.chat_input("Ask about product manuals")
     if question:

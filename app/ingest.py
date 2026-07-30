@@ -5,6 +5,7 @@ from pathlib import Path
 
 from app.config import DATA_DIR
 from app.extract import extract_markdown
+from app.job_state import IngestJobState, save_state
 from app.vectorstore.chroma import get_collection, persist_document
 
 
@@ -59,6 +60,7 @@ def ingest_pdf(pdf_path: Path, collection=None) -> int:
     markdown = extract_markdown(pdf_path)
     chunks = chunk_markdown(markdown)
     if not chunks:
+        save_state(IngestJobState(status="failed", filename=pdf_path.name, message="No chunks extracted"))
         return 0
     for chunk in chunks:
         persist_document(
@@ -68,6 +70,7 @@ def ingest_pdf(pdf_path: Path, collection=None) -> int:
             section_ref=chunk.section_ref,
             chunk_index=chunk.chunk_index,
         )
+    save_state(IngestJobState(status="succeeded", filename=pdf_path.name, chunks=len(chunks)))
     return len(chunks)
 
 

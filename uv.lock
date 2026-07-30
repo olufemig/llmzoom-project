@@ -2714,6 +2714,7 @@ dependencies = [
     { name = "llama-index-vector-stores-chroma" },
     { name = "pymupdf4llm" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "streamlit" },
 ]
 
@@ -2727,6 +2728,7 @@ requires-dist = [
     { name = "llama-index-vector-stores-chroma" },
     { name = "pymupdf4llm" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "streamlit" },
 ]
 
