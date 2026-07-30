@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+
 def setup_observability() -> None:
     try:
         import langwatch
@@ -18,13 +19,12 @@ def setup_observability() -> None:
     )
 
 
-def trace_ingest(name: str = "ingest"):
-    import langwatch
-
-    return langwatch.trace(name=name)
-
-
 def trace_chat(name: str = "rag-chat"):
-    import langwatch
+    try:
+        import langwatch
+    except ImportError:
+        from contextlib import nullcontext
+
+        return nullcontext()
 
     return langwatch.trace(name=name)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from app.sources import SourceExcerpt
+from app.observability import setup_observability, trace_chat
 from app.vectorstore.chroma import get_collection
 
 
@@ -55,8 +55,10 @@ def synthesize_answer(question: str, context: str) -> str:
 
 
 def answer_question(question: str, *, collection=None) -> tuple[str, list[SourceExcerpt]]:
+    setup_observability()
     chunks = retrieve_chunks(question, collection=collection)
     context = build_context(chunks)
-    answer = synthesize_answer(question, context) if context else "No indexed sources found."
+    with trace_chat():
+        answer = synthesize_answer(question, context) if context else "No indexed sources found."
     sources = [SourceExcerpt(text=chunk.text, section_ref=chunk.section_ref) for chunk in chunks]
     return answer, sources

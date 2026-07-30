@@ -5,7 +5,6 @@ from app.config import DATA_DIR
 from app.ingest import ensure_data_dir, list_pdfs
 from app.inngest import trigger_ingest_event
 from app.job_state import IngestJobState, load_state, save_state
-from app.observability import setup_observability
 from app.rag import answer_question
 
 
@@ -23,7 +22,6 @@ def _render_sources(sources) -> None:
 
 
 def run_app() -> None:
-    setup_observability()
     st.set_page_config(page_title="RAG Manuals", layout="wide")
     st.title("Product Manual RAG")
     st.caption(f"Watching PDFs in {DATA_DIR}")
