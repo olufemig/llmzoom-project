@@ -58,6 +58,8 @@ def ingest_pdf(pdf_path: Path, collection=None) -> int:
     collection = collection or get_collection()
     markdown = extract_markdown(pdf_path)
     chunks = chunk_markdown(markdown)
+    if not chunks:
+        return 0
     for chunk in chunks:
         persist_document(
             collection=collection,
