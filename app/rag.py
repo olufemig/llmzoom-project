@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.sources import SourceExcerpt
-from app.observability import setup_observability, trace_chat
+from app.observability import trace_chat
 from app.vectorstore.chroma import get_collection
 
 
@@ -55,7 +55,6 @@ def synthesize_answer(question: str, context: str) -> str:
 
 
 def answer_question(question: str, *, collection=None) -> tuple[str, list[SourceExcerpt]]:
-    setup_observability()
     chunks = retrieve_chunks(question, collection=collection)
     context = build_context(chunks)
     with trace_chat():
