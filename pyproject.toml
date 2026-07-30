@@ -1,0 +1,27 @@
+[project]
+name = "rag-project1"
+version = "0.1.0"
+description = "Small RAG app for product manuals"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb",
+    "langwatch",
+    "llama-index",
+    "llama-index-embeddings-huggingface",
+    "llama-index-llms-openai",
+    "llama-index-vector-stores-chroma",
+    "pymupdf4llm",
+    "python-dotenv",
+    "streamlit",
+]
+
+[project.scripts]
+rag-project1 = "main:main"
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]

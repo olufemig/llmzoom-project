@@ -1,0 +1,24 @@
+# AGENTS.md
+
+- Repo is Python app. Main entrypoint: `main.py`.
+- Python target: `>=3.13` from `pyproject.toml`; `.python-version` is present, so honor repo-pinned interpreter when running tools.
+- `README.md` is empty, so treat source files and manifests as source of truth.
+- App goal: small RAG app for product manuals.
+- Use `llamaindex` for RAG.
+- Use `PyMuPDF4LLM` to extract PDF text to markdown before chunking/embedding.
+- Use local `ChromaDB` for persisted embeddings/vectors.
+- Use hybrid retrieval and document reranking.
+- Use OpenRouter for LLMs.
+- Keep secrets/config in `.env`.
+- Use `Inngest Cloud` for ingestion orchestration only. Do not use Prefect.
+- Ingestion stays a single plain Python script, not a separate app or CLI.
+- Auto-detect new PDFs in `data/` for ingestion.
+- UI is single Streamlit app for ingestion and chat.
+- UI must include PDF upload, ingest action, indexed-state indicator, chat, and expandable source excerpts per answer.
+- Source excerpts should include section refs.
+- No FastAPI in initial MVP.
+- LangWatch Cloud handles observability and performance evaluation; Inngest Cloud auto-initiates ingestion when a PDF is uploaded via Streamlit UI. Both have hosted dashboards.
+- Use `uv` for dependency and virtual-env workflows (`uv sync`, `uv run`); use `pytest`, `llamaindex`, `chromadb`, `PyMuPDF4LLM`, `inngest cloud`, and `langwatch`.
+- Single Dockerfile for UI, chat, and ingestion.
+- Keep tests minimal; only most important coverage.
+- Keep changes minimal; avoid over-engineering.
