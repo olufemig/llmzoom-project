@@ -11,5 +11,9 @@ wheels/
 
 .env
 .env.*
-
-AGENTS.md
+.git
+.github
+*.pyc
+.pytest_cache
+.ruff_cache
+.venv
