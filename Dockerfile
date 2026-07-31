@@ -26,8 +26,5 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8501
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD curl --fail --silent --show-error \
-        http://localhost:8501/_stcore/health || exit 1
 
 CMD ["uv", "run", "--no-sync", "streamlit", "run", "main.py"]
