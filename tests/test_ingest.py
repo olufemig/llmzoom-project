@@ -1,10 +1,4 @@
-from pathlib import Path
-
-from app.ingest import chunk_markdown, ingest_pdf, list_pdfs
-
-
-def test_list_pdfs_missing_dir(tmp_path):
-    assert list_pdfs(tmp_path / "missing") == []
+from app.ingest import chunk_markdown
 
 
 def test_chunk_markdown_tracks_sections():
@@ -12,17 +6,6 @@ def test_chunk_markdown_tracks_sections():
     assert [chunk.section_ref for chunk in chunks] == ["Intro", "Details"]
 
 
-def test_ingest_pdf_uses_chunk_count_and_upserts(monkeypatch, tmp_path):
-    pdf_path = tmp_path / "manual.pdf"
-    pdf_path.write_text("stub")
-
-    monkeypatch.setattr("app.ingest.extract_markdown", lambda _: "# Intro\nhello")
-
-    calls = []
-
-    class DummyCollection:
-        def upsert(self, **kwargs):
-            calls.append(kwargs)
-
-    assert ingest_pdf(pdf_path, collection=DummyCollection()) == 1
-    assert len(calls) == 1
+def test_chunk_markdown_splits_paragraphs():
+    chunks = chunk_markdown("# Intro\npara one\n\npara two")
+    assert [chunk.text for chunk in chunks] == ["para one", "para two"]

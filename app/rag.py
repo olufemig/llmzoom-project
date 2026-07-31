@@ -1,63 +1,87 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+from functools import lru_cache
 
 from app.sources import SourceExcerpt
-from app.observability import trace_chat
-from app.vectorstore.chroma import get_collection
 
 
-@dataclass(frozen=True)
-class RetrievedChunk:
-    text: str
-    section_ref: str
+SYSTEM_PROMPT = """
+Answer only from the retrieved context.
+
+Do not guess or use outside knowledge.
+If the answer is not present in the context, say:
+"I do not know based on the indexed sources."
+""".strip()
 
 
-def retrieve_chunks(question: str, *, collection=None, top_k: int = 3) -> list[RetrievedChunk]:
-    collection = collection or get_collection()
-    result = collection.query(query_texts=[question], n_results=top_k)
-    chunks: list[RetrievedChunk] = []
+def _source_excerpt(source_node) -> SourceExcerpt:
+    node = source_node.node
 
-    documents = (result.get("documents") or [[]])[0]
-    metadatas = (result.get("metadatas") or [[]])[0]
-
-    for document, metadata in zip(documents, metadatas, strict=False):
-        chunks.append(
-            RetrievedChunk(
-                text=document,
-                section_ref=(metadata or {}).get("section_ref", "Unknown section"),
-            )
-        )
-    return chunks
-
-
-def build_context(chunks: list[RetrievedChunk]) -> str:
-    return "\n\n".join(
-        f"[{index + 1}] {chunk.section_ref}\n{chunk.text}"
-        for index, chunk in enumerate(chunks)
+    return SourceExcerpt(
+        text=node.get_content(),
+        section_ref=node.metadata.get("section_ref", "Unknown section"),
     )
 
 
-def synthesize_answer(question: str, context: str) -> str:
-    from llama_index.llms.openai import OpenAI
-    import os
+@lru_cache(maxsize=1)
+def _build_query_engine():
+    from llama_index.core import VectorStoreIndex
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    from llama_index.llms.openai_like import OpenAILike
+    from llama_index.vector_stores.chroma import ChromaVectorStore
 
-    model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
-    base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    llm = OpenAI(model=model, api_key=api_key, api_base=base_url)
-    prompt = (
-        "Answer question using only context. If context lacks answer, say so.\n\n"
-        f"Question:\n{question}\n\nContext:\n{context}"
+    from app.vectorstore.chroma import get_client
+
+    collection = get_client().get_or_create_collection("manuals")
+
+    vector_store = ChromaVectorStore(
+        chroma_collection=collection,
     )
-    response = llm.complete(prompt)
-    return getattr(response, "text", str(response))
+
+    index = VectorStoreIndex.from_vector_store(
+        vector_store=vector_store,
+        embed_model=HuggingFaceEmbedding(
+            model_name="BAAI/bge-small-en-v1.5",
+        ),
+    )
+
+    llm = OpenAILike(
+        model=os.getenv(
+            "OPENROUTER_MODEL",
+            "google/gemma-4-26b-a4b-it:free",
+        ),
+        api_base=os.getenv(
+            "OPENROUTER_BASE_URL",
+            "https://openrouter.ai/api/v1",
+        ),
+        api_key=os.environ["OPENROUTER_API_KEY"],
+        is_chat_model=True,
+    )
+
+    return index.as_query_engine(
+        llm=llm,
+        similarity_top_k=3,
+        system_prompt=SYSTEM_PROMPT,
+    )
 
 
-def answer_question(question: str, *, collection=None) -> tuple[str, list[SourceExcerpt]]:
-    chunks = retrieve_chunks(question, collection=collection)
-    context = build_context(chunks)
-    with trace_chat():
-        answer = synthesize_answer(question, context) if context else "No indexed sources found."
-    sources = [SourceExcerpt(text=chunk.text, section_ref=chunk.section_ref) for chunk in chunks]
-    return answer, sources
+def answer_question(
+    question: str,
+) -> tuple[str, list[SourceExcerpt]]:
+    try:
+        response = _build_query_engine().query(question)
+    except ImportError:
+        return "Required RAG packages are not installed.", []
+    except KeyError:
+        return "OPENROUTER_API_KEY is not configured.", []
+
+    sources = [
+        _source_excerpt(source_node)
+        for source_node in response.source_nodes
+    ]
+
+    if not sources:
+        return "No indexed sources found.", []
+
+    return str(response), sources

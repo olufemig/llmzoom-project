@@ -1,30 +1,22 @@
-from __future__ import annotations
-
 import os
+
+import langwatch
+from langwatch.client import Client
+from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 
 
 def setup_observability() -> None:
-    try:
-        import langwatch
-    except ImportError:
-        return
-
     if not os.getenv("LANGWATCH_API_KEY"):
         return
-    langwatch.setup(
-        api_key=os.getenv("LANGWATCH_API_KEY"),
-        project_id=os.getenv("LANGWATCH_PROJECT_ID") or os.getenv("LANGWATCH_PROJECT"),
-        endpoint_url=os.getenv("LANGWATCH_ENDPOINT"),
-        disable_sending=False,
-    )
 
+    setup_kwargs = {
+        "api_key": os.environ["LANGWATCH_API_KEY"],
+        "ignore_global_tracer_provider_override_warning": True,
+        "instrumentors": [LlamaIndexInstrumentor()],
+    }
 
-def trace_chat(name: str = "rag-chat"):
-    try:
-        import langwatch
-    except ImportError:
-        from contextlib import nullcontext
+    endpoint_url = os.getenv("LANGWATCH_ENDPOINT")
+    if endpoint_url:
+        setup_kwargs["endpoint_url"] = endpoint_url
 
-        return nullcontext()
-
-    return langwatch.trace(name=name)
+    Client(**setup_kwargs)
