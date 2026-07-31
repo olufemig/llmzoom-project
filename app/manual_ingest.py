@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-import shutil
 import urllib.parse
 from pathlib import Path
 
@@ -12,7 +11,7 @@ import requests
 from app.config import CHROMA_DIR, MARKDOWN_DIR
 from app.embeddings import get_embedding_model
 from app.ingest import chunk_markdown
-from app.vectorstore.chroma import persist_document, reset_collection
+from app.vectorstore.chroma import get_client, get_collection, persist_document
 
 
 ARSENAL_WIKI_URL = "https://en.wikipedia.org/wiki/Arsenal_F.C."
@@ -109,12 +108,16 @@ def _delete_markdown_files(markdown_dir: Path) -> None:
         path.unlink()
 
 
-def _reset_chroma_dir() -> None:
-    if CHROMA_DIR.exists():
-        try:
-            shutil.rmtree(CHROMA_DIR)
-        except PermissionError:
-            return
+def _existing_collections() -> list[str]:
+    if not CHROMA_DIR.exists():
+        return []
+
+    client = get_client()
+    try:
+        collections = client.list_collections()
+        return [collection.name for collection in collections]
+    except Exception:
+        return []
 
 
 def _page_markdown(result) -> str:
@@ -132,8 +135,12 @@ async def _crawl_pages(start_url: str) -> list[tuple[str, str]]:
 
 
 def run_manual_ingest(markdown_dir: Path = MARKDOWN_DIR) -> int:
-    _reset_chroma_dir()
-    collection = reset_collection()
+    collections = _existing_collections()
+    if collections:
+        print(f"Chroma collection exists ({', '.join(collections)}). Abort ingest.")
+        return 0
+
+    collection = get_collection()
     embed_model = get_embedding_model()
     pages_result = _crawl_pages(ARSENAL_WIKI_URL)
     pages = asyncio.run(pages_result) if asyncio.iscoroutine(pages_result) else pages_result

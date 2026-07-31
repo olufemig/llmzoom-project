@@ -31,8 +31,9 @@ def test_manual_ingest_moves_markdown(tmp_path, monkeypatch):
         def get_text_embedding(self, text):
             return [0.1, 0.2]
 
-    monkeypatch.setattr("app.manual_ingest.reset_collection", lambda: FakeCollection())
+    monkeypatch.setattr("app.manual_ingest.get_collection", lambda: FakeCollection())
     monkeypatch.setattr("app.manual_ingest.get_embedding_model", lambda: FakeEmbedModel())
+    monkeypatch.setattr("app.manual_ingest._existing_collections", lambda: [])
     monkeypatch.setattr("app.manual_ingest._crawl_pages", lambda _: pages)
 
     embedded = run_manual_ingest(markdown_dir=markdown_dir)
@@ -70,13 +71,14 @@ def test_manual_ingest_clears_existing_collection(tmp_path, monkeypatch):
             return [0.1, 0.2]
 
     collection = FakeCollection()
-    monkeypatch.setattr("app.manual_ingest.reset_collection", lambda: collection)
+    monkeypatch.setattr("app.manual_ingest.get_collection", lambda: collection)
     monkeypatch.setattr("app.manual_ingest.get_embedding_model", lambda: FakeEmbedModel())
+    monkeypatch.setattr("app.manual_ingest._existing_collections", lambda: ["manuals"])
     monkeypatch.setattr("app.manual_ingest._crawl_pages", lambda _: pages)
 
     embedded = run_manual_ingest(markdown_dir=markdown_dir)
 
-    assert embedded == 1
+    assert embedded == 0
 
 
 def test_crawl_uses_mediawiki_api(monkeypatch):
