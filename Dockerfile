@@ -14,32 +14,16 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the uv executable from its official image.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install third-party dependencies first so Docker can cache this layer.
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync \
-    --frozen \
-    --no-dev \
-    --no-install-project
+RUN uv sync --frozen --no-dev --no-install-project
 
-# Copy README.md, main.py, app/, and the rest of the project.
 COPY . .
 
-# Install the local rag-project1 package now that app/ exists.
-RUN uv sync \
-    --frozen \
-    --no-dev
+RUN uv sync --frozen --no-dev
 
 EXPOSE 8501
 
-CMD [
-    "uv",
-    "run",
-    "--no-sync",
-    "streamlit",
-    "run",
-    "main.py"
-]
+CMD ["uv", "run", "--no-sync", "streamlit", "run", "main.py"]
