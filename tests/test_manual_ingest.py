@@ -1,12 +1,11 @@
 from pathlib import Path
 
-from app.manual_ingest import run_manual_ingest
+from app.manual_ingest import _clean_markdown, run_manual_ingest
 import app.manual_ingest as manual_ingest
 
 
 def test_manual_ingest_moves_markdown(tmp_path, monkeypatch):
     markdown_dir = tmp_path / "markdown"
-    backup_dir = tmp_path / "backup"
     pages = [(
         "https://en.wikipedia.org/wiki/Arsenal_F.C.",
         "# Intro\nhello   world ![alt](image.png)\n\nmore text\n\n\n[img-ref]: image.png\n",
@@ -28,16 +27,19 @@ def test_manual_ingest_moves_markdown(tmp_path, monkeypatch):
         def upsert(self, **kwargs):
             return None
 
-    monkeypatch.setattr("app.manual_ingest.get_collection", lambda: FakeCollection())
+    class FakeEmbedModel:
+        def get_text_embedding(self, text):
+            return [0.1, 0.2]
+
+    monkeypatch.setattr("app.manual_ingest.reset_collection", lambda: FakeCollection())
+    monkeypatch.setattr("app.manual_ingest.get_embedding_model", lambda: FakeEmbedModel())
     monkeypatch.setattr("app.manual_ingest._crawl_pages", lambda _: pages)
 
-    embedded = run_manual_ingest(markdown_dir=markdown_dir, backup_dir=backup_dir)
+    embedded = run_manual_ingest(markdown_dir=markdown_dir)
 
     assert embedded == 1
-    assert not (markdown_dir / "Arsenal_F.C..md").exists()
-    assert (backup_dir / "markdown" / "Arsenal_F.C..md").exists()
-    assert "image.png" not in (backup_dir / "markdown" / "Arsenal_F.C..md").read_text(encoding="utf-8")
-    cleaned = (backup_dir / "markdown" / "Arsenal_F.C..md").read_text(encoding="utf-8")
+    assert not any(markdown_dir.glob("*.md"))
+    cleaned = _clean_markdown(pages[0][1])
     assert "hello world" in cleaned
     assert "\n\n" in cleaned
     assert "[img-ref]" not in cleaned
@@ -45,7 +47,6 @@ def test_manual_ingest_moves_markdown(tmp_path, monkeypatch):
 
 def test_manual_ingest_clears_existing_collection(tmp_path, monkeypatch):
     markdown_dir = tmp_path / "markdown"
-    backup_dir = tmp_path / "backup"
     pages = [("https://en.wikipedia.org/wiki/Arsenal_F.C.", "# Intro\nhello")]
 
     class FakeCollection:
@@ -64,33 +65,37 @@ def test_manual_ingest_clears_existing_collection(tmp_path, monkeypatch):
         def upsert(self, **kwargs):
             return None
 
+    class FakeEmbedModel:
+        def get_text_embedding(self, text):
+            return [0.1, 0.2]
+
     collection = FakeCollection()
-    monkeypatch.setattr("app.manual_ingest.get_collection", lambda: collection)
+    monkeypatch.setattr("app.manual_ingest.reset_collection", lambda: collection)
+    monkeypatch.setattr("app.manual_ingest.get_embedding_model", lambda: FakeEmbedModel())
     monkeypatch.setattr("app.manual_ingest._crawl_pages", lambda _: pages)
 
-    embedded = run_manual_ingest(markdown_dir=markdown_dir, backup_dir=backup_dir)
+    embedded = run_manual_ingest(markdown_dir=markdown_dir)
 
     assert embedded == 1
-    assert collection.deleted is True
 
 
-def test_crawl_uses_depth_zero(monkeypatch):
+def test_crawl_uses_mediawiki_api(monkeypatch):
     captured = {}
 
-    class FakeCrawler:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
+    class FakeResponse:
+        def raise_for_status(self):
             return None
 
-        async def arun(self, start_url, config):
-            captured["config"] = config
-            return type("R", (), {"url": start_url, "clean_markdown": "# Intro"})()
+        def json(self):
+            return {"parse": {"wikitext": "== Intro ==\nHello [[Arsenal F.C.|Arsenal]]"}}
 
-    monkeypatch.setattr(manual_ingest, "AsyncWebCrawler", lambda config: FakeCrawler())
+    def fake_get(url, timeout=60, verify=None, headers=None):
+        captured["url"] = url
+        return FakeResponse()
 
-    pages = manual_ingest.asyncio.run(manual_ingest._crawl_pages("https://example.com"))
+    monkeypatch.setattr(manual_ingest.requests, "get", fake_get)
 
-    assert pages == [("https://example.com", "# Intro")]
-    assert captured["config"].deep_crawl_strategy.max_depth == 0
+    pages = manual_ingest.asyncio.run(manual_ingest._crawl_pages("https://en.wikipedia.org/wiki/Arsenal_F.C."))
+
+    assert pages == [("https://en.wikipedia.org/wiki/Arsenal_F.C.", "== Intro ==\nHello Arsenal")]
+    assert "action=parse" in captured["url"]

@@ -5,7 +5,8 @@ from app.rag import answer_question
 
 def _render_sources(sources) -> None:
     for index, source in enumerate(sources, start=1):
-        with st.expander(f"Source {index}: {source.section_ref}"):
+        with st.expander(f"Source {index}: {source.source_title} — {source.section_ref}"):
+            st.caption(source.source_url)
             st.write(source.text)
 
 

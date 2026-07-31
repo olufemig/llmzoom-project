@@ -19,8 +19,11 @@ def test_persist_document_uses_upsert(tmp_path):
         collection=DummyCollection(),
         source_path=tmp_path / "source.md",
         text="hello",
+        source_title="Arsenal F.C.",
+        source_url="https://en.wikipedia.org/wiki/Arsenal_F.C.",
         section_ref="Intro",
         chunk_index=0,
+        embedding=[0.1, 0.2],
     )
 
     assert calls and calls[0]["documents"] == ["hello"]

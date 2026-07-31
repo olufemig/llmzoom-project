@@ -30,8 +30,9 @@ def test_answer_question_returns_sources(monkeypatch):
     monkeypatch.setattr(rag, "_build_query_engine", lambda: FakeQueryEngine())
 
     answer, sources = answer_question("What is this?")
-    assert answer == "answer"
+    assert answer.startswith("answer")
     assert sources[0].section_ref == "Section 1"
+    assert "Sources:" in answer
 
 
 def test_answer_question_no_sources_skips_llm(monkeypatch):

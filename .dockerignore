@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+markdown
+backup
+chromadb
+ingest_state.json
+.env
+*.pyc
+*.pyo
+*.pyd

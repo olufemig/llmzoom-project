@@ -20,6 +20,8 @@ def _source_excerpt(source_node) -> SourceExcerpt:
 
     return SourceExcerpt(
         text=node.get_content(),
+        source_title=node.metadata.get("source_title", "Arsenal F.C."),
+        source_url=node.metadata.get("source_url", "https://en.wikipedia.org/wiki/Arsenal_F.C."),
         section_ref=node.metadata.get("section_ref", "Unknown section"),
     )
 
@@ -27,10 +29,10 @@ def _source_excerpt(source_node) -> SourceExcerpt:
 @lru_cache(maxsize=1)
 def _build_query_engine():
     from llama_index.core import VectorStoreIndex
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.llms.openai_like import OpenAILike
     from llama_index.vector_stores.chroma import ChromaVectorStore
 
+    from app.embeddings import get_embedding_model
     from app.vectorstore.chroma import get_client
 
     collection = get_client().get_or_create_collection("manuals")
@@ -41,9 +43,7 @@ def _build_query_engine():
 
     index = VectorStoreIndex.from_vector_store(
         vector_store=vector_store,
-        embed_model=HuggingFaceEmbedding(
-            model_name="BAAI/bge-small-en-v1.5",
-        ),
+        embed_model=get_embedding_model(),
     )
 
     llm = OpenAILike(
@@ -84,4 +84,6 @@ def answer_question(
     if not sources:
         return "No indexed sources found.", []
 
-    return str(response), sources
+    source = sources[0]
+    citation = f"[1] {source.source_title} — {source.section_ref} ({source.source_url})"
+    return f"{response}\n\nSources:\n{citation}", sources[:1]
