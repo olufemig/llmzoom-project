@@ -26,8 +26,5 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8501
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl --fail --silent http://localhost/ > /dev/null || exit 1
-
 
 CMD ["uv", "run", "--no-sync", "streamlit", "run", "main.py"]

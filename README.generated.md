@@ -22,7 +22,7 @@ Small Streamlit RAG app for questions about Arsenal FC wiki content.
 
 ## Project Layout
 
-*   `main.py` app entrypoint
+*   `main.py` app entrypoint.
 *   `app/ui.py` Streamlit UI
 *   `app/manual_ingest.py` manual ingest script
 *   `app/ingest.py` markdown chunking
@@ -38,10 +38,11 @@ Small Streamlit RAG app for questions about Arsenal FC wiki content.
 *   Python `&gt;=3.13`
 *   `uv`
 *   `OPENROUTER_API_KEY`
-*   Optional: `OPENROUTER_MODEL`, `OPENROUTER_EMBEDDING_MODEL`, `OPENROUTER_BASE_URL`, `LANGWATCH_API_KEY`, `LANGWATCH_ENDPOINT`, `DATA_DIR`, `CHROMA_PATH`  
-      
-      
-    Interface and UI considerations: i used a Streamlit UI for the chat interface
+*   Optional: `OPENROUTER_MODEL`, `OPENROUTER_EMBEDDING_MODEL`, `OPENROUTER_BASE_URL`, `LANGWATCH_API_KEY`, `LANGWATCH_ENDPOINT`, `DATA_DIR`, `CHROMA_PATH`
+
+```plaintext
+Interface and UI considerations: i used a Streamlit UI for the chat interface
+```
 
 ## Install
 
