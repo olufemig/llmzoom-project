@@ -2,6 +2,7 @@ from pathlib import Path
 
 from app.manual_ingest import _clean_markdown, run_manual_ingest
 import app.manual_ingest as manual_ingest
+import app.ingest as ingest
 
 
 def test_manual_ingest_moves_markdown(tmp_path, monkeypatch):
@@ -33,6 +34,7 @@ def test_manual_ingest_moves_markdown(tmp_path, monkeypatch):
 
     monkeypatch.setattr("app.manual_ingest.get_collection", lambda: FakeCollection())
     monkeypatch.setattr("app.manual_ingest.get_embedding_model", lambda: FakeEmbedModel())
+    monkeypatch.setattr(ingest, "get_embedding_model", lambda: FakeEmbedModel())
     monkeypatch.setattr("app.manual_ingest._existing_collections", lambda: [])
     monkeypatch.setattr("app.manual_ingest._crawl_pages", lambda _: pages)
 
@@ -73,6 +75,7 @@ def test_manual_ingest_clears_existing_collection(tmp_path, monkeypatch):
     collection = FakeCollection()
     monkeypatch.setattr("app.manual_ingest.get_collection", lambda: collection)
     monkeypatch.setattr("app.manual_ingest.get_embedding_model", lambda: FakeEmbedModel())
+    monkeypatch.setattr(ingest, "get_embedding_model", lambda: FakeEmbedModel())
     monkeypatch.setattr("app.manual_ingest._existing_collections", lambda: ["manuals"])
     monkeypatch.setattr("app.manual_ingest._crawl_pages", lambda _: pages)
 

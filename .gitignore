@@ -19,3 +19,4 @@ wheels/
 .venv
 .pytest_cache/
 tmp/
+AGENTS.md

@@ -3,6 +3,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from llama_index.core import Document
+from llama_index.core.node_parser import SemanticSplitterNodeParser, SentenceSplitter
+
+from app.embeddings import get_embedding_model
+
 
 @dataclass(frozen=True)
 class IngestedChunk:
@@ -19,12 +24,19 @@ def strip_refs(text: str) -> str:
 
 
 def chunk_markdown(markdown: str) -> list[IngestedChunk]:
-    from llama_index.core.node_parser import SentenceSplitter
-
     chunks: list[IngestedChunk] = []
     current_section = "Unknown section"
     buffer: list[str] = []
-    splitter = SentenceSplitter(chunk_size=512, chunk_overlap=75)
+    try:
+        splitter = SemanticSplitterNodeParser.from_defaults(
+            embed_model=get_embedding_model(),
+            buffer_size=1,
+            breakpoint_percentile_threshold=95,
+        )
+        semantic = True
+    except Exception:
+        splitter = SentenceSplitter(chunk_size=512, chunk_overlap=75)
+        semantic = False
 
     def flush() -> None:
         paragraph: list[str] = []
@@ -42,7 +54,12 @@ def chunk_markdown(markdown: str) -> list[IngestedChunk]:
                 paragraph.clear()
         if paragraph:
             paragraph_text = "\n".join(paragraph).strip()
-            for split_text in splitter.split_text(paragraph_text):
+            if semantic:
+                nodes = splitter.get_nodes_from_documents([Document(text=paragraph_text)])
+                split_texts = [node.get_content() for node in nodes]
+            else:
+                split_texts = splitter.split_text(paragraph_text)
+            for split_text in split_texts:
                 chunks.append(
                     IngestedChunk(
                         text=split_text.strip(),

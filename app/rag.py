@@ -30,6 +30,7 @@ def _source_excerpt(source_node) -> SourceExcerpt:
 def _build_query_engine():
     from llama_index.core import VectorStoreIndex
     from llama_index.llms.openai_like import OpenAILike
+    from llama_index.core.postprocessor.llm_rerank import LLMRerank
     from llama_index.vector_stores.chroma import ChromaVectorStore
 
     from app.embeddings import get_embedding_model
@@ -59,10 +60,16 @@ def _build_query_engine():
         is_chat_model=True,
     )
 
+    reranker = LLMRerank(
+        llm=llm,
+        top_n=3,
+    )
+
     return index.as_query_engine(
         llm=llm,
         similarity_top_k=3,
         system_prompt=SYSTEM_PROMPT,
+        node_postprocessors=[reranker],
     )
 
 

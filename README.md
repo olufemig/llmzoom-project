@@ -1,61 +1,118 @@
-# RAG Project
+## RAG Project
 
-Small RAG app for Arsenal FC wiki pages.
+Small Streamlit RAG app for Arsenal FC wiki pages.
 
-## What It Does
+## Problem Description
 
-- Ingests Arsenal FC wiki content through MediaWiki API
-- Cleans and chunks markdown
-- Stores embeddings in local ChromaDB
-- Chats on same screen in Streamlit
-- Uses LangWatch tracing for LlamaIndex calls when configured
-- Generates offline eval cases from chunk text for manual review
+This is a chat app over Arsenal FC wiki content with local retrieval and source citations.
 
-## Ingest
+## Retrieval Flow
 
-Run manual ingest:
+1.  `app.manual_ingest` fetches Arsenal FC page via MediaWiki API.
+2.  Markdown is cleaned, refs/images removed, and text is chunked with SemanticSplitter
+3.  Chunks are embedded and stored in local ChromaDB.
+4.  `app.rag.answer_question()` builds LlamaIndex `VectorStoreIndex` over ChromaDB.
+5.  Streamlit `app.ui.run_app()` calls retrieval + LLM and renders answer with source excerpts.
 
-```bash
+## Retrieval Evaluation
+
+This has been done using Langwatch. Query output was by semantic search and results were reranked
+
+## LLM Evaluation
+
+LLM response path uses OpenRouter through `llama-index-llms-openai-like`.  
+Answer prompt: answer only from retrieved context, do not guess and return a citation block.
+
+## Interface
+
+*   Streamlit single-screen chat UI
+*   Source excerpts shown in expanders under answer
+*   App entrypoint: `uv run streamlit run main.py`
+
+## Ingestion Pipeline
+
+Manual ingest:
+
+```plaintext
 uv run python -m app.manual_ingest
 ```
 
-Ingest behavior:
+Behavior:
 
-- fetches Arsenal FC wiki page
-- cleans markdown
-- chunks text with LlamaIndex splitter
-- embeds chunks into ChromaDB
-- saves chunk markdown only during ingest, then deletes markdown files
-- seeds eval candidates in `data/evals/candidates.json`
+*   fetch `https://en.wikipedia.org/wiki/Arsenal_F.C.` through MediaWiki API
+*   clean markdown, strip images and refs
+*   save markdown only during ingest
+*   embed chunks into ChromaDB
+*   delete markdown files after ingest
+*   wipe local `chromadb/` first if present
 
-Chunking stays in `app/ingest.py`. Eval case generation stays separate in `app/eval_generate.py`.
+## Monitoring
 
-When `LANGWATCH_API_KEY` is set, LangWatch traces LlamaIndex calls automatically.
+*   LangWatch attaches only when `LANGWATCH_API_KEY` is set
+*   `app.observability.setup_observability()` runs before LlamaIndex imports
+*   warning about existing global tracer provider is suppressed
 
-## Files
+## Containerization
 
-- `chromadb/` stores persisted vectors
-- `data/evals/candidates.json` stores eval cases and status
-- `markdown/` exists only during ingest
-- `docs/eval-schema.md` shows eval JSON shape
+Base image: `python:3.13-slim`
 
-## Env
+Healthcheck:
 
-Set secrets in `.env`:
+*   probes `http://127.0.0.1:8501`
 
-- `OPENROUTER_API_KEY`
-- optional `OPENROUTER_MODEL`
-- optional `OPENROUTER_BASE_URL`
-- optional `LANGWATCH_API_KEY`
-- optional `LANGWATCH_ENDPOINT`
+Run container:
 
-## Tests On Windows
-
-If pytest temp/cache permissions fail, run tests with workspace temp wrapper:
-
-```bash
-./scripts/test.ps1
-./scripts/test.sh
+```plaintext
+uv run streamlit run main.py
 ```
 
-Those scripts set `TMP` and `TEMP` to workspace-local `tmp/` before running pytest.
+## Reproducibility
+
+*   Python `&gt;=3.13`
+*   `uv sync` installs locked deps from `uv.lock`
+*   workspace temp wrapper used for pytest on Windows
+
+## Best Practices
+
+*   Keep `.env` for secrets:
+    *   `OPENROUTER_API_KEY`
+    *   optional `OPENROUTER_MODEL`
+    *   optional `OPENROUTER_BASE_URL`
+    *   optional `LANGWATCH_API_KEY`
+    *   optional `LANGWATCH_ENDPOINT`
+
+## Run
+
+```plaintext
+uv sync
+uv run python -m app.manual_ingest
+uv run streamlit run main.py
+```
+
+## Testing
+
+```plaintext
+uv run pytest --basetemp=tmp
+```
+
+On Windows, use `./scripts/test.ps1` if temp/cache permissions fail.
+
+## Project Structure
+
+*   `main.py` Streamlit entrypoint
+*   `app/manual_ingest.py` ingest pipeline
+*   `app/rag.py` retrieval + LLM query engine
+*   `app/ui.py` Streamlit UI
+*   `app/vectorstore/chroma.py` Chroma helpers
+*   `app/observability.py` LangWatch wiring
+*   `docs/eval-schema.md` eval JSON shape
+*   `scripts/test.ps1` and `scripts/test.sh` Windows/Linux pytest wrappers
+
+Technical Stack
+
+*   Python 3.13
+*   Streamlit
+*   LlamaIndex
+*   ChromaDB
+*   OpenRouter for embeddings and chat LLM
+*   LangWatch for optional chat tracing
