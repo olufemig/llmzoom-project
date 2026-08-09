@@ -1,6 +1,9 @@
 ## RAG Project
 
-Small Streamlit RAG app for Arsenal FC wiki pages.
+Small Streamlit RAG app for Arsenal FC wiki pages. Application has been deployed to the cloud and can be tested at ;  
+ 
+
+[https://rag.tokenreaper.com/](https://rag.tokenreaper.com/)
 
 ## Problem Description
 
@@ -54,11 +57,7 @@ Behavior:
 
 ## Containerization
 
-Base image: `python:3.13-slim`
-
-Healthcheck:
-
-*   probes `http://127.0.0.1:8501`
+Application is deployed to a cloud VPS using Coolify. The Dockerfile was used to create a Dockerfile and Base image: `python:3.13-slim`
 
 Run container:
 
