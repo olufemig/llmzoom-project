@@ -11,11 +11,11 @@ def _render_sources(sources) -> None:
 
 
 def run_app() -> None:
-    st.set_page_config(page_title="RAG Manuals", layout="wide")
+    st.set_page_config(page_title="Arsenal FC RAG ", layout="wide")
     st.title("Arsenal FC Wiki RAG")
     st.caption("Arsenal FC wiki has been ingested, you can now chat on this screen.")
 
-    question = st.chat_input("Ask about Arsenal FC wiki")
+    question = st.chat_input("Ask a question about Arsenal FC")
     result_slot = st.container()
 
     if question:

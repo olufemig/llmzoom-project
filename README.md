@@ -108,7 +108,7 @@ On Windows, use `./scripts/test.ps1` if temp/cache permissions fail.
 *   `docs/eval-schema.md` eval JSON shape
 *   `scripts/test.ps1` and `scripts/test.sh` Windows/Linux pytest wrappers
 
-Technical Stack
+## Technical Stack
 
 *   Python 3.13
 *   Streamlit
