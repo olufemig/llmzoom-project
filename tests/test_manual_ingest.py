@@ -78,7 +78,7 @@ def test_manual_ingest_clears_existing_collection(tmp_path, monkeypatch):
 
     embedded = run_manual_ingest(markdown_dir=markdown_dir)
 
-    assert embedded == 0
+    assert embedded == 1
 
 
 def test_crawl_uses_mediawiki_api(monkeypatch):

@@ -1,6 +1,5 @@
 import os
 
-import langwatch
 from langwatch.client import Client
 from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 
@@ -11,10 +10,9 @@ def setup_observability() -> None:
 
     setup_kwargs = {
         "api_key": os.environ["LANGWATCH_API_KEY"],
-        "ignore_global_tracer_provider_override_warning": True,
         "instrumentors": [LlamaIndexInstrumentor()],
+        "ignore_global_tracer_provider_override_warning": True,
     }
-
     endpoint_url = os.getenv("LANGWATCH_ENDPOINT")
     if endpoint_url:
         setup_kwargs["endpoint_url"] = endpoint_url

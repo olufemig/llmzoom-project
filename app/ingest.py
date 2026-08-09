@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -8,6 +9,13 @@ class IngestedChunk:
     text: str
     section_ref: str
     chunk_index: int
+
+
+REF_TAG_RE = re.compile(r"<ref\b[^>]*/?>.*?</ref>|<ref\b[^>]*/?>", re.IGNORECASE | re.DOTALL)
+
+
+def strip_refs(text: str) -> str:
+    return REF_TAG_RE.sub("", text)
 
 
 def chunk_markdown(markdown: str) -> list[IngestedChunk]:

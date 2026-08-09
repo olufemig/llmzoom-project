@@ -13,7 +13,7 @@ def _render_sources(sources) -> None:
 def run_app() -> None:
     st.set_page_config(page_title="RAG Manuals", layout="wide")
     st.title("Arsenal FC Wiki RAG")
-    st.caption("Ingest Arsenal FC wiki from crawl4ai, then chat on same screen.")
+    st.caption("Arsenal FC wiki has been ingested, you can now chat on this screen.")
 
     question = st.chat_input("Ask about Arsenal FC wiki")
     result_slot = st.container()

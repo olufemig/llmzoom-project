@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import shutil
 import urllib.parse
 from pathlib import Path
 
@@ -10,8 +11,8 @@ import requests
 
 from app.config import CHROMA_DIR, MARKDOWN_DIR
 from app.embeddings import get_embedding_model
-from app.ingest import chunk_markdown
-from app.vectorstore.chroma import get_client, get_collection, persist_document
+from app.ingest import chunk_markdown, strip_refs
+from app.vectorstore.chroma import get_client, get_collection, persist_document, reset_collection
 
 
 ARSENAL_WIKI_URL = "https://en.wikipedia.org/wiki/Arsenal_F.C."
@@ -108,6 +109,14 @@ def _delete_markdown_files(markdown_dir: Path) -> None:
         path.unlink()
 
 
+def _delete_chroma_dir() -> None:
+    if CHROMA_DIR.exists():
+        try:
+            shutil.rmtree(CHROMA_DIR)
+        except PermissionError:
+            pass
+
+
 def _existing_collections() -> list[str]:
     if not CHROMA_DIR.exists():
         return []
@@ -135,12 +144,16 @@ async def _crawl_pages(start_url: str) -> list[tuple[str, str]]:
 
 
 def run_manual_ingest(markdown_dir: Path = MARKDOWN_DIR) -> int:
+    _delete_chroma_dir()
     collections = _existing_collections()
     if collections:
-        print(f"Chroma collection exists ({', '.join(collections)}). Abort ingest.")
-        return 0
-
+        print(f"Chroma collection exists ({', '.join(collections)}). Resetting before ingest.")
     collection = get_collection()
+    if collections:
+        try:
+            collection.delete(where={})
+        except Exception:
+            pass
     embed_model = get_embedding_model()
     pages_result = _crawl_pages(ARSENAL_WIKI_URL)
     pages = asyncio.run(pages_result) if asyncio.iscoroutine(pages_result) else pages_result
@@ -155,11 +168,14 @@ def run_manual_ingest(markdown_dir: Path = MARKDOWN_DIR) -> int:
             continue
 
         for chunk in chunks:
-            embedding = embed_model.get_text_embedding(chunk.text)
+            chunk_text = strip_refs(chunk.text)
+            if not chunk_text.strip():
+                continue
+            embedding = embed_model.get_text_embedding(chunk_text)
             persist_document(
                 collection=collection,
                 source_path=Path(url),
-                text=chunk.text,
+                text=chunk_text,
                 source_title=source_name,
                 source_url=url,
                 section_ref=chunk.section_ref,
