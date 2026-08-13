@@ -1,13 +1,12 @@
 ## RAG Project
 
-Small Streamlit RAG app for Arsenal FC wiki pages. Application has been deployed to the cloud and can be tested at ;  
+This is a Streamlit RAG app for Arsenal FC , built from data extracted from the wiki page for Arsenal FC. I have followed this club for years and is a favorite of mine and my family. 
+
+The RAG Application has been deployed to the cloud and can be tested at ;  
  
 
 [https://rag.tokenreaper.com/](https://rag.tokenreaper.com/)
 
-## Problem Description
-
-This is a chat app over Arsenal FC wiki content with local retrieval and source citations.
 
 ## Retrieval Flow
 
@@ -34,7 +33,7 @@ Answer prompt: answer only from retrieved context, do not guess and return a cit
 
 ## Ingestion Pipeline
 
-Manual ingest:
+I created a Manual ingest script that can be scheduled. ideally i could have done this using Prefect, Airflow or a cron job. Waht this script does is extract the data from the wiki page to markdown, cleans and removes all HTML tags, chunks the data and embeds the vector represenation into Chromadb. All initial chromadb collections are dropped before successful ingestion.
 
 ```plaintext
 uv run python -m app.manual_ingest
