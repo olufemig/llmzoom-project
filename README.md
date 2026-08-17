@@ -1,8 +1,10 @@
 ## RAG Project
 
-This is a Streamlit RAG app for Arsenal FC , built from data extracted from the wiki page for Arsenal FC. I have followed this club for years and is a favorite of mine and my family. 
+This is a Streamlit RAG app for Arsenal FC , built from data extracted from the wiki page for Arsenal FC. 
 
-The RAG Application has been deployed to the cloud and can be tested at ;  
+I have followed this club for years and is a favorite of mine and my family. It is a simple dedicated way to find information about the club, ask questions and get answers.
+
+The RAG Application has been deployed to the cloud and can be tested live at ;  
  
 
 [https://rag.tokenreaper.com/](https://rag.tokenreaper.com/)
