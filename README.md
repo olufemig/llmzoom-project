@@ -1,6 +1,6 @@
 ## RAG Project
 
-This is a Streamlit RAG app for Arsenal FC , built from data extracted from the wiki page for Arsenal FC. 
+This is a Streamlit RAG app for Arsenal FC , built from data extracted from the wiki page for Arsenal FC. https://en.wikipedia.org/wiki/Arsenal_F.C.
 
 I have followed this club for years and is a favorite of mine and my family. It is a simple dedicated way to find information about the club, ask questions and get answers.
 
